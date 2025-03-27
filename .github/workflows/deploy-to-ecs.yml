@@ -1,61 +1,52 @@
-name: Deploy to AWS ECS
+name: Deploy to ECS
 
 on:
   push:
     branches:
-      - main  # Triggers on push to main branch
+      - main
 
 jobs:
   deploy:
-    name: Deploy to ECS Fargate
+    name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
-
-    env:
-      AWS_DEFAULT_REGION: ap-south-1
-      AWS_REGION: ap-south-1
-      ECR_IMAGE: ${{ secrets.ECR_REGISTRY }}/ritual-roast:latest
-      ECS_CLUSTER: ritual-roast-cluster  
-      ECS_SERVICE: ritual-roast-service  
-      ECS_TASK_DEFINITION: ritual-roast-taskdefination  
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
       - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        run: |
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Get Latest Image Tag
+        id: get-image-tag
+        run: |
+          IMAGE_TAG=$(aws ecr describe-images --repository-name ritual-roast --query "sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]" --output text)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Download Current Task Definition
         run: |
-          aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION --region $AWS_REGION \
-            --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition ritual-roast-taskdefination --region ap-south-1 --query taskDefinition > task-definition.json
 
       - name: Update Task Definition with New Image
         run: |
-          jq --arg IMAGE "$ECR_IMAGE" '.containerDefinitions[0].image = $IMAGE' task-definition.json > updated-task-definition.json
+          IMAGE_URI="${{ secrets.ECR_REGISTRY }}/ritual-roast:$IMAGE_TAG"
+          jq --arg IMAGE "$IMAGE_URI" '.containerDefinitions[0].image = $IMAGE' task-definition.json > updated-task-definition.json
 
       - name: Register New Task Definition
-        id: register-task
+        id: register-task-def
         run: |
-          echo "TASK_DEFINITION_ARN=arn:aws:ecs:ap-south-1:836612222168:task-definition/ritual-roast-taskdefination:1" >> $GITHUB_ENV
+          TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> $GITHUB_ENV
 
-      - name: Debug ARN Variable
-        run: echo "Task Definition ARN: $TASK_DEFINITION_ARN"
-
-      - name: Deploy Updated Task to ECS Service
+      - name: Update ECS Service
         run: |
-          if [ -z "$TASK_DEFINITION_ARN" ]; then
-            echo "Error: TASK_DEFINITION_ARN is empty. Task definition registration may have failed."
-            exit 1
-          fi
-          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE \
-            --task-definition $TASK_DEFINITION_ARN --force-new-deployment
+          aws ecs update-service --cluster ritual-roast-cluster --service ritual-roast-service --task-definition $TASK_DEF_ARN --force-new-deployment
 
