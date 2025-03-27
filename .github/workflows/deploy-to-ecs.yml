@@ -1,6 +1,8 @@
+name: Deploy to AWS ECS
+
 on:
   workflow_run:
-    workflows: ["Deploy to ECR"]  # This runs after ECR push
+    workflows: ["Deploy to ECR"]  # Runs after ECR push
     types:
       - completed
 
@@ -41,11 +43,8 @@ jobs:
           TASK_ARN=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json | jq -r '.taskDefinition.taskDefinitionArn')
           echo "TASK_DEFINITION_ARN=$TASK_ARN" >> $GITHUB_ENV
 
-      - name: Update ECS Service with New Task Definition
-        run: |
-          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $TASK_DEFINITION_ARN --force-new-deployment
-
       - name: Force ECS Service to Pull Latest Image
         run: |
-          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          LATEST_TASK_DEF=$(aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION --query 'taskDefinition.taskDefinitionArn' --output text)
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $LATEST_TASK_DEF --force-new-deployment
 
