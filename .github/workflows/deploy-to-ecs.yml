@@ -15,7 +15,7 @@ jobs:
       AWS_REGION: ap-south-1
       ECR_IMAGE: ${{ secrets.ECR_REGISTRY }}/ritual-roast:latest
       ECS_CLUSTER: ritual-roast-cluster
-      ECS_SERVICE: ritual-roast-service
+      ECS_SERVICE: ritual-roast-service  # ECS Service name
       ECS_TASK_DEFINITION: ritual-roast-taskdefination
 
     steps:
