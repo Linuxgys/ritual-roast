@@ -15,7 +15,7 @@ if ($name === '' || $email === '' || $beverage === '') {
         echo json_encode(array('message' => 'Error on submit data', 'status' => 'error', 'sql_error' => mysqli_error($connection)));
         die();
     } else {
-        echo json_encode(array('message' => 'You're awesome! 🎉 Thank you for choosing us !', 'status' => 'success'));
+        echo json_encode(array('message' => 'You are awesome Thank for choosing us', 'status' => 'success'));
         die();
     }
 }
