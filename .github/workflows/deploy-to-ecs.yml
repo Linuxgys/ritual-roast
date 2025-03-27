@@ -1,0 +1,55 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main  # Triggers on push to main branch
+
+jobs:
+  deploy:
+    name: Deploy to ECS Fargate
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_DEFAULT_REGION: ap-south-1
+      AWS_REGION: ap-south-1
+      ECR_IMAGE: ${{ secrets.ECR_REGISTRY }}/ritual-roast:latest
+      ECS_CLUSTER: ritual-roast-cluster
+      ECS_SERVICE: ritual-roast-service
+      ECS_TASK_DEFINITION: ritual-roast-taskdefination
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Download Task Definition
+        run: |
+          aws ecs describe-task-definition --task-definition your-task-family \
+            --query taskDefinition > task-definition.json
+
+      - name: Update Task Definition
+        run: |
+          jq --arg IMAGE "$ECR_IMAGE" '.containerDefinitions[0].image = $IMAGE' task-definition.json > updated-task-definition.json
+
+      - name: Register New Task Definition
+        id: register-task
+        run: |
+          TASK_ARN=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json | jq -r '.taskDefinition.taskDefinitionArn')
+          echo "TASK_DEFINITION_ARN=$TASK_ARN" >> $GITHUB_ENV
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE \
+            --task-definition $TASK_DEFINITION_ARN --force-new-deployment
+
