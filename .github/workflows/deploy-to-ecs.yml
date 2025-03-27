@@ -14,9 +14,9 @@ jobs:
       AWS_DEFAULT_REGION: ap-south-1
       AWS_REGION: ap-south-1
       ECR_IMAGE: ${{ secrets.ECR_REGISTRY }}/ritual-roast:latest
-      ECS_CLUSTER: ritual-roast-cluster
-      ECS_SERVICE: ritual-roast-service  # ECS Service name
-      ECS_TASK_DEFINITION: ritual-roast-taskdefination
+      ECS_CLUSTER: ritual-roast-cluster  # Updated with your cluster name
+      ECS_SERVICE: ritual-roast-service  # Replace with your actual ECS service name
+      ECS_TASK_DEFINITION: ritual-roast-taskdefination  # Ensure this matches the AWS task definition name
 
     steps:
       - name: Checkout Repository
@@ -33,12 +33,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Download Task Definition
+      - name: Download Current Task Definition
         run: |
-          aws ecs describe-task-definition --task-definition your-task-family \
+          aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION --region $AWS_REGION \
             --query taskDefinition > task-definition.json
 
-      - name: Update Task Definition
+      - name: Update Task Definition with New Image
         run: |
           jq --arg IMAGE "$ECR_IMAGE" '.containerDefinitions[0].image = $IMAGE' task-definition.json > updated-task-definition.json
 
@@ -48,7 +48,7 @@ jobs:
           TASK_ARN=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json | jq -r '.taskDefinition.taskDefinitionArn')
           echo "TASK_DEFINITION_ARN=$TASK_ARN" >> $GITHUB_ENV
 
-      - name: Deploy to ECS
+      - name: Deploy Updated Task to ECS Service
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE \
             --task-definition $TASK_DEFINITION_ARN --force-new-deployment
