@@ -1,5 +1,3 @@
-name: Deploy to AWS ECS
-
 on:
   workflow_run:
     workflows: ["Deploy to ECR"]  # This runs after ECR push
@@ -46,3 +44,8 @@ jobs:
       - name: Update ECS Service with New Task Definition
         run: |
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --task-definition $TASK_DEFINITION_ARN --force-new-deployment
+
+      - name: Force ECS Service to Pull Latest Image
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+
