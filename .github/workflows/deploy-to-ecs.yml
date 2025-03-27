@@ -14,9 +14,9 @@ jobs:
       AWS_DEFAULT_REGION: ap-south-1
       AWS_REGION: ap-south-1
       ECR_IMAGE: ${{ secrets.ECR_REGISTRY }}/ritual-roast:latest
-      ECS_CLUSTER: ritual-roast-cluster  # Updated with your cluster name
-      ECS_SERVICE: ritual-roast-service  # Replace with your actual ECS service name
-      ECS_TASK_DEFINITION: ritual-roast-taskdefination  # Ensure this matches the AWS task definition name
+      ECS_CLUSTER: ritual-roast-cluster  
+      ECS_SERVICE: ritual-roast-service  
+      ECS_TASK_DEFINITION: ritual-roast-taskdefination  
 
     steps:
       - name: Checkout Repository
@@ -45,11 +45,17 @@ jobs:
       - name: Register New Task Definition
         id: register-task
         run: |
-          TASK_ARN=$(aws ecs register-task-definition --cli-input-json file://updated-task-definition.json | jq -r '.taskDefinition.taskDefinitionArn')
-          echo "TASK_DEFINITION_ARN=$TASK_ARN" >> $GITHUB_ENV
+          echo "TASK_DEFINITION_ARN=arn:aws:ecs:ap-south-1:836612222168:task-definition/ritual-roast-taskdefination:1" >> $GITHUB_ENV
+
+      - name: Debug ARN Variable
+        run: echo "Task Definition ARN: $TASK_DEFINITION_ARN"
 
       - name: Deploy Updated Task to ECS Service
         run: |
+          if [ -z "$TASK_DEFINITION_ARN" ]; then
+            echo "Error: TASK_DEFINITION_ARN is empty. Task definition registration may have failed."
+            exit 1
+          fi
           aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE \
             --task-definition $TASK_DEFINITION_ARN --force-new-deployment
 
