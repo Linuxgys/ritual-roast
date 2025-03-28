@@ -1,9 +1,9 @@
-Deploying to AWS ECS Using GitHub Actions
+**Deploying to AWS ECS Using GitHub Actions**
 
 This document outlines the step-by-step process to set up Continuous Integration and Continuous Deployment (CI/CD) for deploying a containerized application to Amazon Elastic Container Service (ECS) using GitHub Actions.
 Prerequisites
 
-Before proceeding, ensure you have the following:
+**Before proceeding, ensure you have the following:**
 
     AWS Account: Access to an AWS account with permissions to create and manage ECS, ECR, IAM, and related resources.
 
@@ -11,8 +11,8 @@ Before proceeding, ensure you have the following:
 
     Docker: Installed on your local development environment for building container images.
 
-Steps Performed
-1. Create an Amazon Elastic Container Registry (ECR)
+**Steps Performed**
+**1. Create an Amazon Elastic Container Registry (ECR)**
 
 Amazon ECR is a fully managed Docker container registry that makes it easy to store, manage, and deploy Docker container images.
 
@@ -22,7 +22,7 @@ Amazon ECR is a fully managed Docker container registry that makes it easy to st
 
     Replace your-repo-name with your desired repository name and your-region with your AWS region.
 
-2. Build and Push Docker Image to ECR
+**2. Build and Push Docker Image to ECR**
 
     Action: Built the Docker image locally and pushed it to the newly created ECR repository.
 
@@ -40,7 +40,7 @@ Amazon ECR is a fully managed Docker container registry that makes it easy to st
 
     Ensure to replace placeholders with your actual AWS account ID, repository name, and region.
 
-3. Create an ECS Cluster
+**3. Create an ECS Cluster**
 
 Amazon ECS clusters are logical groupings of tasks or services.
 
@@ -48,7 +48,7 @@ Amazon ECS clusters are logical groupings of tasks or services.
 
     aws ecs create-cluster --cluster-name your-cluster-name
 
-4. Define an ECS Task Definition
+**4. Define an ECS Task Definition**
 
 A task definition is a blueprint for your application, specifying containers, CPU, memory, and other configurations.
 
@@ -79,7 +79,7 @@ Action: Registered the task definition with ECS.
 
     aws ecs register-task-definition --cli-input-json file://task-definition.json
 
-5. Create an ECS Service
+**5. Create an ECS Service**
 
 An ECS service runs and maintains a specified number of instances of a task definition simultaneously in an ECS cluster.
 
@@ -89,7 +89,7 @@ An ECS service runs and maintains a specified number of instances of a task defi
 
     Ensure to specify the correct subnets and security groups.
 
-6. Set Up GitHub Actions for CI/CD
+**6. Set Up GitHub Actions for CI/CD**
 
 GitHub Actions automates workflows directly within GitHub.
 
@@ -151,7 +151,7 @@ GitHub Actions automates workflows directly within GitHub.
 
     Ensure to replace placeholders with your actual values.
 
-7. Configure GitHub Secrets
+**7. Configure GitHub Secrets**
 
 To securely store AWS credentials and other sensitive information:
 
